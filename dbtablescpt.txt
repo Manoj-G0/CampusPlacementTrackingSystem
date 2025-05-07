@@ -1,0 +1,193 @@
+-- Drop existing tables if they exist to ensure clean creation
+DROP TABLE IF EXISTS resource_allocations CASCADE;
+DROP TABLE IF EXISTS evaluations CASCADE;
+DROP TABLE IF EXISTS hiring_phases CASCADE;
+DROP TABLE IF EXISTS job_descriptions CASCADE;
+DROP TABLE IF EXISTS resumes CASCADE;
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS applications CASCADE;
+DROP TABLE IF EXISTS placement_drives CASCADE;
+DROP TABLE IF EXISTS companies CASCADE;
+DROP TABLE IF EXISTS company_categories CASCADE;
+DROP TABLE IF EXISTS branches CASCADE;
+DROP TABLE IF EXISTS colleges CASCADE;
+DROP TABLE IF EXISTS hr CASCADE;
+DROP TABLE IF EXISTS placement_officers CASCADE;
+DROP TABLE IF EXISTS students CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
+-- Create Users Table
+CREATE TABLE users (
+    usr_id VARCHAR(50) PRIMARY KEY,
+    usr_email VARCHAR(255) UNIQUE NOT NULL,
+    usr_password VARCHAR(255) NOT NULL,
+    usr_role VARCHAR(20) NOT NULL CHECK (usr_role IN ('STUDENT', 'TPO', 'HR')),
+    usr_created_date DATE NOT NULL DEFAULT CURRENT_DATE
+);
+
+-- Create Colleges Table
+CREATE TABLE colleges (
+    clg_id SERIAL PRIMARY KEY,
+    clg_name VARCHAR(255) NOT NULL,
+    clg_address TEXT,
+    clg_contact VARCHAR(50)
+);
+
+-- Create Branches Table
+CREATE TABLE branches (
+    brn_id SERIAL PRIMARY KEY,
+    brn_clg_id INTEGER NOT NULL REFERENCES colleges(clg_id) ON DELETE CASCADE,
+    brn_name VARCHAR(100) NOT NULL,
+    brn_description TEXT
+);
+
+-- Create Students Table
+CREATE TABLE students (
+    rollNo VARCHAR(50) PRIMARY KEY,
+    fullName VARCHAR(255),
+    branch_id INTEGER NOT NULL REFERENCES branches(brn_id) ON DELETE RESTRICT,
+    college_id INTEGER NOT NULL REFERENCES colleges(clg_id) ON DELETE RESTRICT,
+    admYear INTEGER CHECK (admYear >= 2000),
+    passoutYear INTEGER CHECK (passoutYear >= admYear),
+    dob DATE,
+    gender VARCHAR(10) CHECK (gender IN ('MALE', 'FEMALE', 'OTHER')),
+    address VARCHAR(255),
+    status VARCHAR(10) CHECK (status IN ('ACTIVE', 'INACTIVE')),
+    cgpa NUMERIC(4,2) CHECK (cgpa >= 0 AND cgpa <= 10),
+    backlogs INTEGER CHECK (backlogs >= 0),
+    phoneNo VARCHAR(20),
+    collegeEmail VARCHAR(255) NOT NULL UNIQUE,
+    tenthScore NUMERIC(5,2) CHECK (tenthScore >= 0 AND tenthScore <= 100),
+    interScore NUMERIC(5,2) CHECK (interScore >= 0 AND interScore <= 100),
+    eamcetRank INTEGER CHECK (eamcetRank >= 1),
+    CONSTRAINT fk_user FOREIGN KEY (rollNo) REFERENCES users(usr_id) ON DELETE CASCADE
+);
+
+-- Create Placement Officers Table
+CREATE TABLE placement_officers (
+    pof_id SERIAL PRIMARY KEY,
+    pof_usr_id VARCHAR(50) NOT NULL UNIQUE REFERENCES users(usr_id) ON DELETE CASCADE,
+    pof_clg_id INTEGER NOT NULL REFERENCES colleges(clg_id) ON DELETE RESTRICT,
+    pof_join_year INTEGER NOT NULL CHECK (pof_join_year >= 2000),
+    pof_department VARCHAR(100),
+    pof_designation VARCHAR(100),
+    pof_status VARCHAR(4) NOT NULL CHECK (pof_status IN ('ACTV', 'INAC'))
+);
+
+-- Create Company Categories Table
+CREATE TABLE company_categories (
+    cat_id SERIAL PRIMARY KEY,
+    cat_name VARCHAR(100) NOT NULL
+);
+
+-- Create Companies Table
+CREATE TABLE companies (
+    cmp_id SERIAL PRIMARY KEY,
+    cmp_cat_id INTEGER NOT NULL REFERENCES company_categories(cat_id) ON DELETE RESTRICT,
+    cmp_name VARCHAR(255) NOT NULL,
+    cmp_description TEXT
+);
+
+-- Create HR Table
+CREATE TABLE hr (
+    hr_id SERIAL PRIMARY KEY,
+    hr_usr_id VARCHAR(50) NOT NULL UNIQUE REFERENCES users(usr_id) ON DELETE CASCADE,
+    hr_cmp_id INTEGER NOT NULL REFERENCES companies(cmp_id) ON DELETE RESTRICT,
+    hr_join_year INTEGER NOT NULL CHECK (hr_join_year >= 2000),
+    hr_department VARCHAR(100),
+    hr_designation VARCHAR(100),
+    hr_status VARCHAR(4) NOT NULL CHECK (hr_status IN ('ACTV', 'INAC'))
+);
+
+-- Create Placement Drives Table
+CREATE TABLE placement_drives (
+    pld_id SERIAL PRIMARY KEY,
+    pld_clg_id INTEGER NOT NULL REFERENCES colleges(clg_id) ON DELETE CASCADE,
+    pld_cmp_id INTEGER NOT NULL REFERENCES companies(cmp_id) ON DELETE RESTRICT,
+    pld_name VARCHAR(255) NOT NULL,
+    pld_start_date DATE NOT NULL,
+    pld_end_date DATE NOT NULL CHECK (pld_end_date >= pld_start_date),
+    pld_min_gpa NUMERIC(4,2) NOT NULL CHECK (pld_min_gpa >= 0 AND pld_min_gpa <= 10),
+    pld_max_backlogs INTEGER NOT NULL CHECK (pld_max_backlogs >= 0),
+    pld_allowed_branches TEXT NOT NULL, -- Comma-separated branch IDs
+    pld_package NUMERIC(10,2) NOT NULL CHECK (pld_package >= 0)
+);
+
+-- Create Applications Table
+CREATE TABLE applications (
+    app_id SERIAL PRIMARY KEY,
+    app_usr_id VARCHAR(50) NOT NULL REFERENCES users(usr_id) ON DELETE CASCADE,
+    app_pld_id INTEGER NOT NULL REFERENCES placement_drives(pld_id) ON DELETE CASCADE,
+    app_cmp_id INTEGER NOT NULL REFERENCES companies(cmp_id) ON DELETE RESTRICT,
+    app_date DATE NOT NULL,
+    app_status VARCHAR(10) NOT NULL CHECK (app_status IN ('PEND', 'APPR', 'REJC'))
+);
+
+-- Create Notifications Table
+CREATE TABLE notifications (
+    ntf_id SERIAL PRIMARY KEY,
+    ntf_usr_id VARCHAR(50) NOT NULL REFERENCES users(usr_id) ON DELETE CASCADE,
+    ntf_message TEXT NOT NULL,
+    ntf_date DATE NOT NULL,
+    ntf_read BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- Create Resumes Table
+CREATE TABLE resumes (
+    res_id SERIAL PRIMARY KEY,
+    res_usr_id VARCHAR(50) NOT NULL REFERENCES users(usr_id) ON DELETE CASCADE,
+    res_file VARCHAR(255) NOT NULL,
+    res_upload_date DATE NOT NULL
+);
+
+-- Create Job Descriptions Table
+CREATE TABLE job_descriptions (
+    jbd_id SERIAL PRIMARY KEY,
+    jbd_cmp_id INTEGER NOT NULL REFERENCES companies(cmp_id) ON DELETE RESTRICT,
+    jbd_pld_id INTEGER NOT NULL REFERENCES placement_drives(pld_id) ON DELETE CASCADE,
+    jbd_role VARCHAR(100) NOT NULL,
+    jbd_package NUMERIC(10,2) NOT NULL CHECK (jbd_package >= 0),
+    jbd_min_gpa NUMERIC(4,2) NOT NULL CHECK (jbd_min_gpa >= 0 AND jbd_min_gpa <= 10),
+    jbd_max_backlogs INTEGER NOT NULL CHECK (jbd_max_backlogs >= 0),
+    jbd_allowed_branches TEXT NOT NULL, -- Comma-separated branch IDs
+    jbd_skills TEXT
+);
+
+-- Create Hiring Phases Table
+CREATE TABLE hiring_phases (
+    hph_id SERIAL PRIMARY KEY,
+    hph_pld_id INTEGER NOT NULL REFERENCES placement_drives(pld_id) ON DELETE CASCADE,
+    hph_name VARCHAR(100) NOT NULL,
+    hph_sequence INTEGER NOT NULL CHECK (hph_sequence >= 1)
+);
+
+-- Create Evaluations Table
+CREATE TABLE evaluations (
+    evl_id SERIAL PRIMARY KEY,
+    evl_app_id INTEGER NOT NULL REFERENCES applications(app_id) ON DELETE CASCADE,
+    evl_hph_id INTEGER NOT NULL REFERENCES hiring_phases(hph_id) ON DELETE RESTRICT,
+    evl_score NUMERIC(5,2) CHECK (evl_score >= 0 AND evl_score <= 100),
+    evl_comments TEXT
+);
+
+-- Create Resource Allocations Table
+CREATE TABLE resource_allocations (
+    rsa_id SERIAL PRIMARY KEY,
+    rsa_pld_id INTEGER NOT NULL REFERENCES placement_drives(pld_id) ON DELETE CASCADE,
+    rsa_type VARCHAR(100) NOT NULL,
+    rsa_quantity INTEGER NOT NULL CHECK (rsa_quantity >= 0),
+    rsa_date DATE NOT NULL
+);
+
+-- Create Indexes for Performance
+CREATE INDEX idx_students_rollNo ON students(rollNo);
+CREATE INDEX idx_placement_officers_usr_id ON placement_officers(pof_usr_id);
+CREATE INDEX idx_hr_usr_id ON hr(hr_usr_id);
+CREATE INDEX idx_applications_usr_id ON applications(app_usr_id);
+CREATE INDEX idx_applications_pld_id ON applications(app_pld_id);
+CREATE INDEX idx_notifications_usr_id ON notifications(ntf_usr_id);
+CREATE INDEX idx_job_descriptions_pld_id ON job_descriptions(jbd_pld_id);
+CREATE INDEX idx_hiring_phases_pld_id ON hiring_phases(hph_pld_id);
+CREATE INDEX idx_evaluations_app_id ON evaluations(evl_app_id);
+CREATE INDEX idx_resource_allocations_pld_id ON resource_allocations(rsa_pld_id);
+
