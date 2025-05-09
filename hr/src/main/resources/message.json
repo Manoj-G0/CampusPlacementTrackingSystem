@@ -1,0 +1,17 @@
+{
+    "drive.added": "Placement drive added successfully.",
+    "drive.added.notification": "New placement drive added",
+    "drive.added.subject": "New Placement Drive Submission",
+    "drive.access.error": "You do not have access to this drive.",
+    "no.data.round": "No data found since the round is not yet completed.",
+    "download.applications": "Download Applications",
+    "ongoing.drives.title": "Ongoing Drives",
+    "completed.drives.title": "Completed Drives",
+    "recruitment.chart.title": "Students Recruited Per Year",
+    "add.job.description.title": "Add Job Description",
+    "round.wise.students.title": "Round-Wise Selected Students",
+    "final.candidates.title": "Final Selected Candidates",
+    "form.submit": "Submit",
+    "form.cancel": "Cancel",
+    "error.generic": "An error occurred. Please try again."
+}

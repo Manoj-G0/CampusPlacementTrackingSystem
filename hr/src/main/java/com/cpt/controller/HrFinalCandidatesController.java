@@ -1,0 +1,78 @@
+package com.cpt.controller;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import com.cpt.model.HrStudent;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.servlet.http.HttpSession;
+
+@Controller
+@RequestMapping("/CPT/hr")
+public class HrFinalCandidatesController {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @GetMapping("/finalCandidates")
+    public String finalCandidates(@RequestParam int pldId, HttpSession session, Model model) throws IOException {
+        String usrId = (String) session.getAttribute("usr_id");
+        if (usrId == null) {
+            return "redirect:/CPT/login";
+        }
+
+        // Load messages
+        ClassPathResource resource = new ClassPathResource("message.json");
+        Map<String, String> messages = objectMapper.readValue(resource.getInputStream(), Map.class);
+        model.addAttribute("messages", messages);
+
+        // Fetch HR details
+        String hrSql = "SELECT hr_name, cmp_id, clg_id FROM hr WHERE hr_id = ?";
+        Map<String, Object> hr = jdbcTemplate.queryForMap(hrSql, usrId);
+
+        // Verify drive belongs to HR's company and college
+        String driveSql = "SELECT pld_id FROM placement_drives WHERE pld_id = ? AND pld_cmp_id = ? AND pld_clg_id = ?";
+        List<Map<String, Object>> driveCheck = jdbcTemplate.queryForList(driveSql, pldId, hr.get("cmp_id"), hr.get("clg_id"));
+        if (driveCheck.isEmpty()) {
+            model.addAttribute("errorMessage", messages.get("drive.access.error"));
+            return "hr_dashboard";
+        }
+
+        // Fetch final selected candidates
+        String studentSql = "SELECT s.rol_no, s.full_name, s.college_email, s.contact_number " +
+                           "FROM attended_drives ad " +
+                           "JOIN students s ON ad.usr_id = s.rol_no " +
+                           "WHERE ad.pld_id = ? AND ad.status = 'SEL'";
+        List<HrStudent> candidates = jdbcTemplate.query(studentSql, new Object[]{pldId}, (rs, rowNum) -> {
+            HrStudent s = new HrStudent();
+            s.setRolNo(rs.getString("rol_no"));
+            s.setFullName(rs.getString("full_name"));
+            s.setCollegeEmail(rs.getString("college_email"));
+            s.setContactNumber(rs.getString("contact_number"));
+            return s;
+        });
+
+        model.addAttribute("candidates", candidates);
+        model.addAttribute("pldId", pldId);
+        model.addAttribute("userRole", "HR");
+        model.addAttribute("userName", hr.get("hr_name"));
+        model.addAttribute("userInitials", ((String) hr.get("hr_name")).substring(0, 2).toUpperCase());
+        model.addAttribute("activePage", "finalCandidates");
+
+        return "final_candidates";
+    }
+}
