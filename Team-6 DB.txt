@@ -1,0 +1,688 @@
+create or replace function after_student_insert()
+returns trigger as $$
+begin 
+	insert into users(usr_id, usr_password, usr_role) values(NEW.roll_no, 'student@123', 'STUD');
+
+	insert into profiles(prf_usr_id, prf_updated) values(NEW.roll_no, current_date);
+
+	return null;
+end;
+$$ language plpgsql;
+
+create trigger trg_after_student_insert
+after insert on students
+for each row
+execute function after_student_insert()
+
+select * from admins;
+
+create or replace function after_admin_insert()
+returns trigger as $$
+begin 
+	insert into users(usr_id, usr_password, usr_role) values(NEW.po_id, 'admin@123', 'ADMN');
+
+	insert into profiles(prf_usr_id, prf_updated) values(NEW.po_id, current_date);
+
+	return null;
+end;
+$$ language plpgsql;
+
+create trigger trg_after_admin_insert
+after insert on admins
+for each row
+execute function after_admin_insert()
+
+create or replace function after_hr_insert()
+returns trigger as $$
+begin 
+	insert into users(usr_id, usr_password, usr_role) values(NEW.hr_id, 'hr@123', 'HR');
+
+	insert into profiles(prf_usr_id, prf_updated) values(NEW.hr_id, current_date);
+
+	return null;
+end;
+$$ language plpgsql;
+
+create trigger trg_after_hr_insert
+after insert on hr
+for each row
+execute function after_hr_insert()
+
+-- Drop tables in reverse order to avoid dependency issues (for testing purposes)
+DROP TABLE IF EXISTS audit_logs;
+DROP TABLE IF EXISTS faqs;
+DROP TABLE IF EXISTS system_configs;
+DROP TABLE IF EXISTS reports;
+DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS resource_allocations;
+DROP TABLE IF EXISTS resumes;
+DROP TABLE IF EXISTS phase_evaluations;
+DROP TABLE IF EXISTS screening_teams;
+DROP TABLE IF EXISTS screening_criteria;
+DROP TABLE IF EXISTS company_teams;
+DROP TABLE IF EXISTS profiles;
+DROP TABLE IF EXISTS shortlisted;
+DROP TABLE IF EXISTS eligible_students;
+DROP TABLE IF EXISTS round_wise_shortlisted;
+DROP TABLE IF EXISTS applications;
+DROP TABLE IF EXISTS student_results;
+DROP TABLE IF EXISTS hiring_phase_parameters;
+DROP TABLE IF EXISTS hiring_phases;
+DROP TABLE IF EXISTS attended_drives;
+DROP TABLE IF EXISTS hr;
+DROP TABLE IF EXISTS faculty;
+DROP TABLE IF EXISTS placement_drives;
+DROP TABLE IF EXISTS admins;
+DROP TABLE IF EXISTS students;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS companies;
+DROP TABLE IF EXISTS company_categories;
+DROP TABLE IF EXISTS resources;
+DROP TABLE IF EXISTS branches;
+DROP TABLE IF EXISTS colleges;
+
+-- Create tables in dependency order
+
+create TABLE TEMP_SHORTLISTED(
+PLD_ID INTEGER,
+PH_ID INTEGER,
+STD_ID VARCHAR(20),
+STD_NAME VARCHAR(20),
+PH_NAME VARCHAR(20),
+SCORE INTEGER
+)
+
+-- Colleges table
+CREATE TABLE colleges (
+    clg_id SERIAL PRIMARY KEY,
+    clg_name VARCHAR(80) NOT NULL,
+    clg_address VARCHAR(255),
+    clg_contact VARCHAR(15) CHECK (clg_contact ~ '^[0-9]{10,15}$')
+);
+
+-- Branches table
+CREATE TABLE branches (
+    brn_id SERIAL PRIMARY KEY,
+    brn_clg_id INTEGER NOT NULL REFERENCES colleges(clg_id) ON DELETE CASCADE,
+    brn_name VARCHAR(50) NOT NULL,
+    brn_desc VARCHAR(255)
+);
+
+-- Company Categories table
+CREATE TABLE company_categories (
+    cct_id SERIAL PRIMARY KEY,
+    cct_name VARCHAR(50) NOT NULL,
+    cct_desc VARCHAR(255)
+);
+
+-- Companies table
+CREATE TABLE companies (
+    cmp_id SERIAL PRIMARY KEY,
+    cmp_cct_id INTEGER REFERENCES company_categories(cct_id) ON DELETE SET NULL,
+    cmp_name VARCHAR(80) NOT NULL,
+    cmp_desc VARCHAR(255)
+);
+
+-- Users table
+CREATE TABLE users (
+    usr_id VARCHAR(50) PRIMARY KEY,
+    usr_password VARCHAR(255) NOT NULL,
+    usr_role CHAR(4) CHECK (usr_role IN ('STUD', 'ADMN', 'HR'))
+);
+
+-- Students table
+CREATE TABLE students (
+    roll_no VARCHAR(50) PRIMARY KEY,
+    full_name VARCHAR(255) NOT NULL,
+    branch_id INTEGER REFERENCES branches(brn_id) ON DELETE SET NULL,
+    college_id INTEGER REFERENCES colleges(clg_id) ON DELETE CASCADE,
+    gender varchar(10),
+    status VARCHAR(10) CHECK (status IN ('Active', 'Inactive')),
+    cgpa NUMERIC(3,2) CHECK (cgpa >= 0 AND cgpa <= 10),
+    backlogs INTEGER CHECK (backlogs >= 0),
+    college_email VARCHAR(255) NOT NULL UNIQUE CHECK (college_email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'),
+    github_url varchar(255),
+    skills varchar(255)
+);
+
+-- Admins table
+CREATE TABLE admins (
+    po_id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    designation VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL CHECK (email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'),
+    clg_id INTEGER NOT NULL REFERENCES colleges(clg_id) ON DELETE CASCADE
+);
+
+-- Faculty table
+CREATE TABLE faculty (
+    fac_id SERIAL PRIMARY KEY,
+    clg_id INTEGER NOT NULL REFERENCES colleges(clg_id) ON DELETE CASCADE,
+    fac_name VARCHAR(80) NOT NULL,
+    fcontact VARCHAR(15) CHECK (fcontact ~ '^[0-9]{10,15}$'),
+    status VARCHAR(20) CHECK (status IN ('ASSIGNED', 'NOT ASSIGNED')) NOT NULL DEFAULT 'NOT ASSIGNED'
+);
+
+-- Placement Drives table
+CREATE TABLE placement_drives (
+    pld_id SERIAL PRIMARY KEY,
+    pld_clg_id INTEGER NOT NULL REFERENCES colleges(clg_id) ON DELETE CASCADE,
+    pld_cmp_id INTEGER NOT NULL REFERENCES companies(cmp_id) ON DELETE CASCADE,
+    pld_name VARCHAR(80) NOT NULL,
+    pld_start_date DATE NOT NULL,
+    pld_end_date DATE,
+    pld_status VARCHAR(35) CHECK (pld_status IN ('NOT ASSIGNED', 'ASSIGNED')) NOT NULL DEFAULT 'NOT ASSIGNED',
+    pld_package DECIMAL(10,2) NOT NULL DEFAULT 400000.00,
+    pld_role_name VARCHAR(70) DEFAULT 'SDE',
+    CONSTRAINT valid_dates CHECK (pld_end_date >= pld_start_date)
+);
+
+-- HR table
+CREATE TABLE hr (
+    hr_id VARCHAR(50) PRIMARY KEY,
+    hr_name VARCHAR(100) NOT NULL,
+    cmp_id INTEGER NOT NULL REFERENCES companies(cmp_id) ON DELETE CASCADE,
+    clg_id INTEGER NOT NULL REFERENCES colleges(clg_id) ON DELETE CASCADE,
+    hr_email VARCHAR(255) NOT NULL UNIQUE CHECK (hr_email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+);
+
+-- Attended Drives table
+CREATE TABLE attended_drives (
+    pld_id INTEGER NOT NULL REFERENCES placement_drives(pld_id) ON DELETE CASCADE,
+    usr_id VARCHAR(50) NOT NULL REFERENCES users(usr_id) ON DELETE CASCADE,
+    status VARCHAR(20) CHECK (status IN ('SELECTED', 'NOT_SELECTED')) NOT NULL,
+    fizzled_round INTEGER,
+    PRIMARY KEY (pld_id, usr_id)
+);
+
+-- Hiring Phases table
+CREATE TABLE hiring_phases (
+    hph_id SERIAL PRIMARY KEY,
+    hph_pld_id INTEGER NOT NULL REFERENCES placement_drives(pld_id) ON DELETE CASCADE,
+    hph_name VARCHAR(50) NOT NULL,
+    hph_sequence INTEGER NOT NULL,
+    total_score INTEGER NOT NULL,
+    threshold_score INTEGER NOT NULL,
+    CHECK (threshold_score <= total_score)
+);
+
+-- Hiring Phase Parameters table
+CREATE TABLE hiring_phase_parameters (
+    param_id SERIAL PRIMARY KEY,
+    hph_id INTEGER NOT NULL REFERENCES hiring_phases(hph_id) ON DELETE CASCADE,
+    param_name VARCHAR(40) NOT NULL,
+    threshold_score INTEGER NOT NULL,
+    total_score INTEGER NOT NULL,
+    CHECK (threshold_score <= total_score)
+);
+
+-- Student Results table
+CREATE TABLE student_results (
+    stdres_id SERIAL PRIMARY KEY,
+    pld_id INTEGER NOT NULL REFERENCES placement_drives(pld_id) ON DELETE CASCADE,
+    std_id VARCHAR(50) NOT NULL REFERENCES users(usr_id) ON DELETE CASCADE,
+    hph_id INTEGER NOT NULL REFERENCES hiring_phases(hph_id) ON DELETE CASCADE,
+    param_id INTEGER NOT NULL REFERENCES hiring_phase_parameters(param_id) ON DELETE CASCADE,
+    score INTEGER NOT NULL
+);
+
+-- Applications table
+CREATE TABLE applications (
+    app_id SERIAL PRIMARY KEY,
+    app_usr_id VARCHAR(50) NOT NULL REFERENCES users(usr_id) ON DELETE CASCADE,
+    app_pld_id INTEGER NOT NULL REFERENCES placement_drives(pld_id) ON DELETE CASCADE,
+    app_cmp_id INTEGER NOT NULL REFERENCES companies(cmp_id) ON DELETE CASCADE,
+    app_date DATE NOT NULL,
+    app_status CHAR(4) CHECK (app_status IN ('APPL', 'SHRT', 'REJD', 'OFFR')),
+    CONSTRAINT unique_application UNIQUE (app_usr_id, app_pld_id)
+);
+
+-- Round Wise Shortlisted table
+CREATE TABLE round_wise_shortlisted (
+    phase_id INTEGER NOT NULL REFERENCES hiring_phases(hph_id) ON DELETE CASCADE,
+    pld_id INTEGER NOT NULL REFERENCES placement_drives(pld_id) ON DELETE CASCADE,
+    student_id VARCHAR(50) NOT NULL REFERENCES students(roll_no) ON DELETE CASCADE,
+    score DECIMAL(5,2) CHECK (score >= 0),
+    PRIMARY KEY (phase_id, pld_id, student_id)
+);
+
+-- Eligible Students table
+CREATE TABLE eligible_students (
+    pld_id INTEGER NOT NULL REFERENCES placement_drives(pld_id) ON DELETE CASCADE,
+    student_id VARCHAR(50) NOT NULL REFERENCES students(roll_no) ON DELETE CASCADE,
+    PRIMARY KEY (pld_id, student_id)
+);
+
+-- Shortlisted table
+CREATE TABLE shortlisted (
+    pld_id INTEGER NOT NULL REFERENCES placement_drives(pld_id) ON DELETE CASCADE,
+    student_id VARCHAR(50) NOT NULL REFERENCES students(roll_no) ON DELETE CASCADE,
+    PRIMARY KEY (pld_id, student_id)
+);
+
+-- Profiles table
+CREATE TABLE profiles (
+    prf_id SERIAL PRIMARY KEY,
+    prf_usr_id VARCHAR(50) REFERENCES users(usr_id) ON DELETE CASCADE,
+    prf_contact VARCHAR(15) CHECK (prf_contact ~ '^[0-9]{10,15}$'),
+    prf_image BYTEA,
+    prf_updated DATE
+);
+
+-- Company Teams table
+CREATE TABLE company_teams (
+    ctm_id SERIAL PRIMARY KEY,
+    ctm_cmp_id INTEGER REFERENCES companies(cmp_id) ON DELETE CASCADE,
+    ctm_name VARCHAR(80) NOT NULL,
+    ctm_contact VARCHAR(100)
+);
+
+-- Screening Criteria table
+CREATE TABLE screening_criteria (
+    scr_id SERIAL PRIMARY KEY,
+    scr_pld_id INTEGER REFERENCES placement_drives(pld_id) ON DELETE CASCADE,
+    scr_min_gpa DECIMAL(3,2),
+    scr_min_backlogs INTEGER CHECK (scr_min_backlogs >= 0 AND scr_min_backlogs <= 10) DEFAULT 0,
+    scr_brn_id INTEGER NOT NULL REFERENCES branches(brn_id),
+    scr_gender CHAR(1) CHECK (scr_gender IN ('M', 'F', 'O'))
+);
+
+-- Screening Teams table
+CREATE TABLE screening_teams (
+    stm_id SERIAL PRIMARY KEY,
+    stm_hph_id INTEGER REFERENCES hiring_phases(hph_id) ON DELETE CASCADE,
+    stm_ctm_id INTEGER REFERENCES company_teams(ctm_id) ON DELETE CASCADE,
+    stm_pld_id INTEGER REFERENCES placement_drives(pld_id) ON DELETE CASCADE
+);
+
+-- Phase Evaluations table
+CREATE TABLE phase_evaluations (
+    pev_id SERIAL PRIMARY KEY,
+    pev_app_id INTEGER REFERENCES applications(app_id) ON DELETE CASCADE,
+    pev_hph_id INTEGER REFERENCES hiring_phases(hph_id) ON DELETE CASCADE,
+    pev_score DECIMAL(5,2)
+);
+
+-- Resumes table
+CREATE TABLE resumes (
+    res_id SERIAL PRIMARY KEY,
+    res_usr_id VARCHAR(50) REFERENCES users(usr_id) ON DELETE CASCADE,
+    res_file_name VARCHAR(255),
+    res_file_type VARCHAR(255),
+    res_data BYTEA,
+    res_upload_date DATE
+);
+
+-- Resources table
+CREATE TABLE resources (
+    resource_id INTEGER PRIMARY KEY,
+    clg_id INTEGER REFERENCES colleges(clg_id),
+    brn_id INTEGER REFERENCES branches(brn_id),
+    resource_capacity INTEGER,
+    status VARCHAR(30)
+);
+
+-- Resource Allocations table
+CREATE TABLE resource_allocations (
+    ral_id SERIAL PRIMARY KEY,
+    ral_pld_id INTEGER REFERENCES placement_drives(pld_id) ON DELETE CASCADE,
+    ral_resource_id INTEGER REFERENCES resources(resource_id),
+    ral_phase_id INTEGER REFERENCES hiring_phases(hph_id),
+    ral_capacity INTEGER,
+    ral_occupied INTEGER,
+    ral_faculty_name varchar(50),
+    ral_pld_name varchar(50)
+);
+
+-- Notifications table
+CREATE TABLE notifications (
+    ntf_id SERIAL PRIMARY KEY,
+    ntf_usr_id VARCHAR(50) REFERENCES users(usr_id) ON DELETE CASCADE,
+    ntf_message VARCHAR(255) NOT NULL,
+    ntf_date DATE,
+    ntf_read BOOLEAN DEFAULT FALSE
+);
+
+-- Reports table
+CREATE TABLE reports (
+    rpt_id SERIAL PRIMARY KEY,
+    rpt_usr_id VARCHAR(50) REFERENCES users(usr_id) ON DELETE CASCADE,
+    rpt_type CHAR(4) CHECK (rpt_type IN ('PLAC', 'ANLY')),
+    rpt_date DATE,
+    rpt_file VARCHAR(255)
+);
+
+-- System Configs table
+CREATE TABLE system_configs (
+    cfg_id SERIAL PRIMARY KEY,
+    cfg_key VARCHAR(50) NOT NULL,
+    cfg_value VARCHAR(255),
+    cfg_desc VARCHAR(255)
+);
+
+-- Audit Logs table
+CREATE TABLE audit_logs (
+    alg_id SERIAL PRIMARY KEY,
+    alg_app_id INTEGER REFERENCES applications(app_id) ON DELETE CASCADE,
+    alg_action VARCHAR(50) NOT NULL,
+    alg_date DATE
+);
+
+-- FAQs table
+CREATE TABLE faqs (
+    faq_id SERIAL PRIMARY KEY,
+    faq_question VARCHAR(255) NOT NULL,
+    faq_answer VARCHAR(255) NOT NULL
+);
+
+
+-- Insert Colleges (Andhra Pradesh)
+INSERT INTO colleges (clg_name, clg_address, clg_contact) VALUES
+('JNTU College of Engineering', 'Kakinada, Andhra Pradesh', '9876543210'),
+('Andhra University College of Engineering', 'Visakhapatnam, Andhra Pradesh', '9123456789');
+
+-- Insert Branches
+INSERT INTO branches (brn_clg_id, brn_name, brn_desc) VALUES
+(1, 'CSE', 'Computer Science and Engineering'),
+(1, 'ECE', 'Electronics and Communication Engineering'),
+(2, 'CSE', 'Computer Science and Engineering'),
+(2, 'MECH', 'Mechanical Engineering');
+
+-- Insert Company Categories
+INSERT INTO company_categories (cct_name, cct_desc) VALUES
+('IT', 'Information Technology Services'),
+('Core', 'Core Engineering Companies');
+
+-- Insert Companies (Indian Companies)
+INSERT INTO companies (cmp_cct_id, cmp_name, cmp_desc) VALUES
+(1, 'Tata Consultancy Services', 'Leading IT services provider'),
+(1, 'Infosys', 'Global IT consulting and services'),
+(2, 'L&T Engineering', 'Core engineering and construction'),
+(1, 'Wipro', 'IT services and consulting');
+
+-- Insert Users (5 Students, 2 Admins, 10 HRs)
+INSERT INTO users (usr_id, usr_password, usr_role) VALUES
+-- Students
+('JNTU001', 'student@123', 'STUD'),
+('JNTU002', 'student@123', 'STUD'),
+('JNTU003', 'student@123', 'STUD'),
+('AU001', 'student@123', 'STUD'),
+('AU002', 'student@123', 'STUD'),
+-- Admins
+('PO001', 'admin@123', 'ADMN'),
+('PO002', 'admin@123', 'ADMN'),
+-- HRs
+('HR001', 'hr@123', 'HR'),
+('HR002', 'hr@123', 'HR'),
+('HR003', 'hr@123', 'HR'),
+('HR004', 'hr@123', 'HR'),
+('HR005', 'hr@123', 'HR'),
+('HR006', 'hr@123', 'HR'),
+('HR007', 'hr@123', 'HR'),
+('HR008', 'hr@123', 'HR'),
+('HR009', 'hr@123', 'HR'),
+('HR010', 'hr@123', 'HR');
+
+-- Insert Students
+INSERT INTO students (roll_no, full_name, branch_id, college_id, gender, status, cgpa, backlogs, college_email, github_url, skills) VALUES
+('JNTU001', 'Rahul Sharma', 1, 1, 'Male', 'Active', 8.5, 0, 'rahul@jntu.ac.in', 'github.com/rahulsharma', 'Java, Python, SQL'),
+('JNTU002', 'Priya Reddy', 1, 1, 'Female', 'Active', 7.8, 1, 'priya@jntu.ac.in', 'github.com/priyareddy', 'C++, JavaScript, React'),
+('JNTU003', 'Vikram Singh', 2, 1, 'Male', 'Active', 8.2, 0, 'vikram@jntu.ac.in', 'github.com/vikramsingh', 'Python, Embedded Systems'),
+('AU001', 'Anjali Nair', 3, 2, 'Female', 'Active', 9.0, 0, 'anjali@au.ac.in', 'github.com/anjalinair', 'Java, Spring, AWS'),
+('AU002', 'Kiran Kumar', 4, 2, 'Male', 'Active', 7.5, 2, 'kiran@au.ac.in', 'github.com/kirankumar', 'CAD, MATLAB, Mechanical Design');
+
+-- Insert Admins
+INSERT INTO admins (po_id, name, designation, email, clg_id) VALUES
+('PO001', 'Dr. Srinivas Rao', 'Placement Officer', 'srinivas@jntu.ac.in', 1),
+('PO002', 'Prof. Lakshmi Devi', 'Head of T&P', 'lakshmi@au.ac.in', 2);
+
+-- Insert HRs
+INSERT INTO hr (hr_id, hr_name, cmp_id, clg_id, hr_email) VALUES
+('HR001', 'Amit Patel', 1, 1, 'amit.patel@tcs.com'),
+('HR002', 'Sneha Gupta', 1, 2, 'sneha.gupta@tcs.com'),
+('HR003', 'Ravi Kumar', 2, 1, 'ravi.kumar@infosys.com'),
+('HR004', 'Pooja Sharma', 2, 2, 'pooja.sharma@infosys.com'),
+('HR005', 'Vijay Reddy', 3, 1, 'vijay.reddy@lt.com'),
+('HR006', 'Anita Desai', 3, 2, 'anita.desai@lt.com'),
+('HR007', 'Suresh Menon', 4, 1, 'suresh.menon@wipro.com'),
+('HR008', 'Deepa Nair', 4, 2, 'deepa.nair@wipro.com'),
+('HR009', 'Karthik Joshi', 1, 1, 'karthik.joshi@tcs.com'),
+('HR010', 'Meena Vyas', 2, 2, 'meena.vyas@infosys.com');
+
+-- Insert Faculty
+INSERT INTO faculty (clg_id, fac_name, fcontact, status) VALUES
+(1, 'Dr. Ramesh Babu', '9876543201', 'ASSIGNED'),
+(2, 'Prof. Sita Kumari', '9876543202', 'ASSIGNED');
+
+-- Insert Placement Drives (2 completed, 2 upcoming)
+INSERT INTO placement_drives (pld_clg_id, pld_cmp_id, pld_name, pld_start_date, pld_end_date, pld_status, pld_package, pld_role_name) VALUES
+(1, 1, 'TCS CodeVita 2024', '2024-10-01', '2024-10-03', 'ASSIGNED', 700000.00, 'Software Engineer'),
+(2, 2, 'Infosys InfyTQ 2024', '2024-11-01', '2024-11-04', 'ASSIGNED', 650000.00, 'Systems Engineer'),
+(1, 3, 'L&T Core Drive 2025', '2025-06-01', '2025-06-03', 'NOT ASSIGNED', 800000.00, 'Design Engineer'),
+(2, 4, 'Wipro Elite 2025', '2025-07-01', '2025-07-03', 'NOT ASSIGNED', 600000.00, 'Project Engineer');
+
+-- Insert Screening Criteria
+INSERT INTO screening_criteria (scr_pld_id, scr_min_gpa, scr_min_backlogs, scr_brn_id, scr_gender) VALUES
+(1, 7.0, 1, 1, NULL), -- TCS: CSE, CGPA >= 7.0, max 1 backlog
+(1, 7.0, 1, 2, NULL), -- TCS: ECE
+(2, 6.5, 2, 3, NULL), -- Infosys: CSE
+(3, 7.5, 0, 2, NULL), -- L&T: ECE
+(3, 7.5, 0, 4, NULL), -- L&T: MECH
+(4, 6.5, 2, 3, NULL); -- Wipro: CSE
+
+-- Insert Hiring Phases
+INSERT INTO hiring_phases (hph_pld_id, hph_name, hph_sequence, total_score, threshold_score) VALUES
+-- TCS Drive (4 rounds)
+(1, 'Online Test', 1, 100, 60),
+(1, 'Technical Interview', 2, 100, 70),
+(1, 'Managerial Interview', 3, 100, 65),
+(1, 'HR Interview', 4, 100, 60),
+-- Infosys Drive (3 rounds)
+(2, 'Aptitude Test', 1, 100, 55),
+(2, 'Technical Interview', 2, 100, 65),
+(2, 'HR Interview', 3, 100, 60),
+-- L&T Drive (4 rounds)
+(3, 'Written Test', 1, 100, 70),
+(3, 'Group Discussion', 2, 100, 60),
+(3, 'Technical Interview', 3, 100, 75),
+(3, 'HR Interview', 4, 100, 65),
+-- Wipro Drive (3 rounds)
+(4, 'Online Assessment', 1, 100, 50),
+(4, 'Technical Interview', 2, 100, 60),
+(4, 'HR Interview', 3, 100, 55);
+
+-- Insert Hiring Phase Parameters
+INSERT INTO hiring_phase_parameters (hph_id, param_name, threshold_score, total_score) VALUES
+-- TCS Drive
+(1, 'Coding', 30, 50), (1, 'Aptitude', 30, 50), -- Online Test
+(2, 'Technical Skills', 70, 100), -- Technical Interview
+(3, 'Communication', 65, 100), -- Managerial Interview
+(4, 'Cultural Fit', 60, 100), -- HR Interview
+-- Infosys Drive
+(5, 'Logical Reasoning', 25, 50), (5, 'Verbal', 30, 50), -- Aptitude Test
+(6, 'Technical Knowledge', 65, 100), -- Technical Interview
+(7, 'Fitment', 60, 100), -- HR Interview
+-- L&T Drive
+(8, 'Core Concepts', 35, 50), (8, 'Aptitude', 35, 50), -- Written Test
+(9, 'Communication', 60, 100), -- Group Discussion
+(10, 'Technical Expertise', 75, 100), -- Technical Interview
+(11, 'Cultural Fit', 65, 100), -- HR Interview
+-- Wipro Drive
+(12, 'Coding', 25, 50), (12, 'Aptitude', 25, 50), -- Online Assessment
+(13, 'Technical Skills', 60, 100), -- Technical Interview
+(14, 'Fitment', 55, 100); -- HR Interview
+
+-- Insert Eligible Students
+INSERT INTO eligible_students (pld_id, student_id) VALUES
+-- TCS Drive (JNTU001, JNTU002, JNTU003)
+(1, 'JNTU001'), (1, 'JNTU002'), (1, 'JNTU003'),
+-- Infosys Drive (AU001, AU002)
+(2, 'AU001'), (2, 'AU002'),
+-- L&T Drive (JNTU003, AU002)
+(3, 'JNTU003'), (3, 'AU002'),
+-- Wipro Drive (AU001, AU002)
+(4, 'AU001'), (4, 'AU002');
+
+-- Insert Applications
+INSERT INTO applications (app_usr_id, app_pld_id, app_cmp_id, app_date, app_status) VALUES
+-- JNTU001: Selected in TCS, Disqualified in Infosys
+('JNTU001', 1, 1, '2024-09-25', 'OFFR'),
+('JNTU001', 2, 2, '2024-10-25', 'REJD'),
+-- JNTU002: Selected in Infosys, Disqualified in TCS
+('JNTU002', 1, 1, '2024-09-25', 'REJD'),
+('JNTU002', 2, 2, '2024-10-25', 'OFFR'),
+-- JNTU003: Selected in TCS, Eligible for L&T
+('JNTU003', 1, 1, '2024-09-25', 'OFFR'),
+('JNTU003', 3, 3, '2025-05-25', 'APPL'),
+-- AU001: Selected in Infosys, Eligible for Wipro
+('AU001', 2, 2, '2024-10-25', 'OFFR'),
+('AU001', 4, 4, '2025-06-25', 'APPL'),
+-- AU002: Selected in L&T, Disqualified in Infosys
+('AU002', 3, 3, '2025-05-25', 'OFFR'),
+('AU002', 2, 2, '2024-10-25', 'REJD'),
+('AU002', 4, 4, '2025-06-25', 'APPL');
+
+-- Continue Student Results
+INSERT INTO student_results (pld_id, std_id, hph_id, param_id, score) VALUES
+-- JNTU002: Infosys (Selected), TCS (Disqualified in Technical)
+(2, 'JNTU002', 5, 6, 40), (2, 'JNTU002', 5, 7, 35), -- Aptitude Test: 75
+(2, 'JNTU002', 6, 8, 70), -- Technical Interview
+(2, 'JNTU002', 7, 9, 65), -- HR Interview
+-- JNTU003: TCS (Selected)
+(1, 'JNTU003', 1, 1, 45), (1, 'JNTU003', 1, 2, 40), -- Online Test: 85
+(1, 'JNTU003', 2, 3, 75), -- Technical Interview
+(1, 'JNTU003', 3, 4, 70), -- Managerial Interview
+(1, 'JNTU003', 4, 5, 60), -- HR Interview
+-- AU001: Infosys (Selected)
+(2, 'AU001', 5, 6, 45), (2, 'AU001', 5, 7, 40), -- Aptitude Test: 85
+(2, 'AU001', 6, 8, 75), -- Technical Interview
+(2, 'AU001', 7, 9, 70), -- HR Interview
+-- AU002: L&T (Selected), Infosys (Disqualified in Technical)
+(2, 'AU002', 5, 6, 35), (2, 'AU002', 5, 7, 30), -- Aptitude Test: 65
+(2, 'AU002', 6, 8, 60), -- Technical Interview: Failed
+(3, 'AU002', 8, 10, 40), (3, 'AU002', 8, 11, 35), -- Written Test: 75
+(3, 'AU002', 9, 12, 70), -- Group Discussion
+(3, 'AU002', 10, 13, 80), -- Technical Interview
+(3, 'AU002', 11, 14, 65); -- HR Interview
+
+-- Insert Round Wise Shortlisted
+INSERT INTO round_wise_shortlisted (phase_id, pld_id, student_id, score) VALUES
+-- TCS Drive
+(1, 1, 'JNTU001', 75), (2, 1, 'JNTU001', 80), (3, 1, 'JNTU001', 70), (4, 1, 'JNTU001', 65),
+(1, 1, 'JNTU002', 65), (2, 1, 'JNTU002', 65),
+(1, 1, 'JNTU003', 85), (2, 1, 'JNTU003', 75), (3, 1, 'JNTU003', 70), (4, 1, 'JNTU003', 60),
+-- Infosys Drive
+(5, 2, 'JNTU001', 65), (6, 2, 'JNTU001', 60),
+(5, 2, 'JNTU002', 75), (6, 2, 'JNTU002', 70), (7, 2, 'JNTU002', 65),
+(5, 2, 'AU001', 85), (6, 2, 'AU001', 75), (7, 2, 'AU001', 70),
+(5, 2, 'AU002', 65), (6, 2, 'AU002', 60),
+-- L&T Drive
+(8, 3, 'AU002', 75), (9, 3, 'AU002', 70), (10, 3, 'AU002', 80), (11, 3, 'AU002', 65);
+
+-- Insert Shortlisted
+INSERT INTO shortlisted (pld_id, student_id) VALUES
+(1, 'JNTU001'), (1, 'JNTU003'),
+(2, 'JNTU002'), (2, 'AU001'),
+(3, 'AU002');
+
+-- Insert Profiles
+INSERT INTO profiles (prf_usr_id, prf_contact, prf_updated) VALUES
+('JNTU001', '9876543210', '2024-09-20'),
+('JNTU002', '9876543211', '2024-10-20'),
+('JNTU003', '9876543212', '2024-09-20'),
+('AU001', '9876543213', '2024-10-20'),
+('AU002', '9876543214', '2024-05-20');
+
+-- Insert Company Teams
+INSERT INTO company_teams (ctm_cmp_id, ctm_name, ctm_contact) VALUES
+(1, 'TCS Recruitment Team', 'recruitment@tcs.com'),
+(2, 'Infosys HR Team', 'hr@infosys.com'),
+(3, 'L&T Core Team', 'careers@lt.com'),
+(4, 'Wipro Talent Acquisition', 'talent@wipro.com');
+
+-- Insert Screening Teams
+INSERT INTO screening_teams (stm_hph_id, stm_ctm_id, stm_pld_id) VALUES
+(1, 1, 1), -- TCS Online Test
+(2, 1, 1), -- TCS Technical Interview
+(5, 2, 2), -- Infosys Aptitude Test
+(8, 3, 3), -- L&T Written Test
+(12, 4, 4); -- Wipro Online Assessment
+
+-- Insert Phase Evaluations
+INSERT INTO phase_evaluations (pev_app_id, pev_hph_id, pev_score) VALUES
+-- JNTU001: TCS (Selected), Infosys (Disqualified)
+(1, 1, 75), (1, 2, 80), (1, 3, 70), (1, 4, 65),
+(2, 5, 65), (2, 6, 60),
+-- JNTU002: Infosys (Selected), TCS (Disqualified)
+(3, 1, 65), (3, 2, 65),
+(4, 5, 75), (4, 6, 70), (4, 7, 65),
+-- JNTU003: TCS (Selected)
+(5, 1, 85), (5, 2, 75), (5, 3, 70), (5, 4, 60),
+-- AU001: Infosys (Selected)
+(7, 5, 85), (7, 6, 75), (7, 7, 70),
+-- AU002: L&T (Selected), Infosys (Disqualified)
+(9, 5, 65), (9, 6, 60),
+(8, 8, 75), (8, 9, 70), (8, 10, 80), (8, 11, 65);
+
+-- Insert Resumes
+INSERT INTO resumes (res_usr_id, res_file_name, res_file_type, res_upload_date) VALUES
+('JNTU001', 'rahul_resume.pdf', 'application/pdf', '2024-09-20'),
+('JNTU002', 'priya_resume.pdf', 'application/pdf', '2024-10-20'),
+('JNTU003', 'vikram_resume.pdf', 'application/pdf', '2024-09-20'),
+('AU001', 'anjali_resume.pdf', 'application/pdf', '2024-10-20'),
+('AU002', 'kiran_resume.pdf', 'application/pdf', '2024-05-20');
+
+-- Insert Resources
+INSERT INTO resources (resource_id, clg_id, brn_id, resource_capacity, status) VALUES
+(1, 1, 1, 50, 'AVAILABLE'),
+(2, 1, 2, 30, 'AVAILABLE'),
+(3, 2, 3, 40, 'AVAILABLE'),
+(4, 2, 4, 20, 'AVAILABLE');
+
+-- Insert Resource Allocations
+INSERT INTO resource_allocations (ral_pld_id, ral_resource_id, ral_phase_id, ral_capacity, ral_occupied, ral_faculty_id, ral_quantity, ral_date) VALUES
+(1, 1, 1, 50, 10, 1, 1, '2024-10-01'),
+(2, 3, 5, 40, 15, 2, 1, '2024-11-01'),
+(3, 2, 8, 30, 5, 1, 1, '2025-06-01'),
+(4, 3, 12, 40, 0, 2, 1, '2025-07-01');
+
+-- Insert Attended Drives
+INSERT INTO attended_drives (pld_id, usr_id, status, fizzled_round) VALUES
+(1, 'JNTU001', 'SELECTED', NULL),
+(2, 'JNTU001', 'NOT_SELECTED', 2),
+(1, 'JNTU002', 'NOT_SELECTED', 2),
+(2, 'JNTU002', 'SELECTED', NULL),
+(1, 'JNTU003', 'SELECTED', NULL),
+(2, 'AU001', 'SELECTED', NULL),
+(2, 'AU002', 'NOT_SELECTED', 2),
+(3, 'AU002', 'SELECTED', NULL);
+
+-- Insert Notifications
+INSERT INTO notifications (ntf_usr_id, ntf_message, ntf_date, ntf_read) VALUES
+('JNTU001', 'Congratulations! You are selected for TCS.', '2024-10-04', TRUE),
+('JNTU002', 'You have been shortlisted for Infosys HR round.', '2024-11-03', TRUE),
+('JNTU003', 'Apply for L&T Core Drive 2025.', '2025-05-20', FALSE),
+('AU001', 'Congratulations! You are selected for Infosys.', '2024-11-05', TRUE),
+('AU002', 'You are eligible for Wipro Elite 2025.', '2025-06-20', FALSE);
+
+-- Insert Reports
+INSERT INTO reports (rpt_usr_id, rpt_type, rpt_date, rpt_file) VALUES
+('PO001', 'PLAC', '2024-10-10', 'tcs_placement_report.pdf'),
+('PO002', 'ANLY', '2024-11-10', 'infosys_analysis.pdf');
+
+-- Insert System Configs
+INSERT INTO system_configs (cfg_key, cfg_value, cfg_desc) VALUES
+('max_applications', '3', 'Maximum applications per student per drive'),
+('min_cgpa', '6.0', 'Minimum CGPA for eligibility');
+
+-- Insert Audit Logs
+INSERT INTO audit_logs (alg_app_id, alg_action, alg_date) VALUES
+(1, 'Application Submitted', '2024-09-25'),
+(1, 'Offer Accepted', '2024-10-04'),
+(2, 'Application Rejected', '2024-11-02'),
+(4, 'Offer Accepted', '2024-11-05');
+
+-- Insert FAQs
+INSERT INTO faqs (faq_question, faq_answer) VALUES
+('What is the eligibility for TCS?', 'CGPA >= 7.0, max 1 backlog, CSE/ECE branches.'),
+('How to apply for a drive?', 'Log in to the portal and submit your application before the deadline.');

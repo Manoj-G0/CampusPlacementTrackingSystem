@@ -1,0 +1,8 @@
+{
+  "NoStds":"No Students to display. Upload a file to begin.",
+  "endDateError":"End Date must be after Start Date.",
+  "Nostudents":"No students provided.",
+  "ResumeUploaded":"Hi Upload your Resume",
+  "errorMessage":"This Placement Drive already exists in the criteria So cannot be set.",
+  "addPD": "Dear Student, Please check the dashboard for the upcoming drive :"
+}
