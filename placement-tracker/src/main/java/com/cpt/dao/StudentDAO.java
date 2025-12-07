@@ -446,7 +446,7 @@ public class StudentDAO implements StudentDAOInt {
 		return jdbcTemplate.queryForObject(sql, Long.class);
 	}
 
-	private final RowMapper<AttendedDrive> attendedDriveMapper = new RowMapper<AttendedDrive>() {
+	private final RowMapper<AttendedDrive> attendedDriveMapper = new RowMapper<>() {
 		@Override
 		public AttendedDrive mapRow(ResultSet rs, int rowNum) throws SQLException {
 			// This RowMapper is used to process individual rows, but we'll handle grouping
@@ -518,7 +518,7 @@ public class StudentDAO implements StudentDAOInt {
 
 	}
 
-	private final RowMapper<DriveInfo> driveInfoMapper = new RowMapper<DriveInfo>() {
+	private final RowMapper<DriveInfo> driveInfoMapper = new RowMapper<>() {
 		@Override
 		public DriveInfo mapRow(ResultSet rs, int rowNum) throws SQLException {
 			DriveInfo drive = new DriveInfo();

@@ -21,7 +21,7 @@ public class HiringPhaseDAO implements HiringPhaseDAOInt {
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
-	private final RowMapper<HiringPhase> rowMapper = new RowMapper<HiringPhase>() {
+	private final RowMapper<HiringPhase> rowMapper = new RowMapper<>() {
 		@Override
 		public HiringPhase mapRow(ResultSet rs, int rowNum) throws SQLException {
 			HiringPhase hs = new HiringPhase();
