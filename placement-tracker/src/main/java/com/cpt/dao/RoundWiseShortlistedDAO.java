@@ -23,7 +23,7 @@ public class RoundWiseShortlistedDAO implements RoundWiseShortlistedDAOInt {
 		jdbcTemplate = new JdbcTemplate(dataSource);
 	}
 
-	private final RowMapper<RoundWiseShortlisted> rowMapper = new RowMapper<>() {
+	private final RowMapper<RoundWiseShortlisted> rowMapper = new RowMapper<RoundWiseShortlisted>() {
 		@Override
 		public RoundWiseShortlisted mapRow(ResultSet rs, int rowNum) throws SQLException {
 			RoundWiseShortlisted list = new RoundWiseShortlisted();

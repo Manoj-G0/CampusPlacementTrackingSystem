@@ -23,7 +23,7 @@ public class ShortlistedDAO implements ShortlistedDAOInt {
 		jdbcTemplate = new JdbcTemplate(dataSource);
 	}
 
-	private final RowMapper<Shortlisted> rowMapper = new RowMapper<>() {
+	private final RowMapper<Shortlisted> rowMapper = new RowMapper<Shortlisted>() {
 		@Override
 		public Shortlisted mapRow(ResultSet rs, int rowNum) throws SQLException {
 			Shortlisted list = new Shortlisted();
