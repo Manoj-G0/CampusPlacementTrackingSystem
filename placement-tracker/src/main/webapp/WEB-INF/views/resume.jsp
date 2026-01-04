@@ -7,7 +7,6 @@
     String message = (String)request.getAttribute("message");
     Resume resume = (Resume) request.getAttribute("resume");
     String error = request.getParameter("error");
-    System.out.println(request.getAttribute("usr_id"));
     
 %>
 <!DOCTYPE html>

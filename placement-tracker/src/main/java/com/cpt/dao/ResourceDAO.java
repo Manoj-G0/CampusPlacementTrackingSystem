@@ -26,7 +26,6 @@ public class ResourceDAO implements ResourceDAOInt {
 	@Override
 	public List<ResourceDTO> getResourcesForDrives(List<String> driveNames) {
 		// SQL query to retrieve the required columns from the database
-		System.out.println("!!!!!!!!!" + driveNames);
 
 //    	String sql1 = "select ral_id from resource_allocations_temp where ral_pld_name IN (?)";
 //    	int count = jdbcTemplate.queryForObject(sql1,driveNames.get(0), Integer.class);
@@ -35,7 +34,6 @@ public class ResourceDAO implements ResourceDAOInt {
 				+ "ral_capacity, ral_occupied, ral_faculty_name " + "FROM resource_allocations "
 				+ "WHERE ral_pld_name IN (" + String.join(",", Collections.nCopies(driveNames.size(), "?")) + ")";
 
-		System.out.println("Query  " + sql);
 		// Execute the query with the list of drive names
 		List<ResourceDTO> rlist = jdbcTemplate.query(sql, driveNames.toArray(), (rs, rowNum) -> {
 			ResourceDTO resourceDTO = new ResourceDTO();
@@ -51,7 +49,6 @@ public class ResourceDAO implements ResourceDAOInt {
 			return resourceDTO;
 		});
 
-		System.out.println("^^^^^^^^" + rlist);
 		return rlist;
 	}
 	// ---------------------------------------------------------------
@@ -125,8 +122,6 @@ public class ResourceDAO implements ResourceDAOInt {
 			String name = (String) obj;
 			rlist.add(name);
 		}
-		System.out.println("-------------" + flist);
-		System.out.println("+++++++++++++" + rlist);
 		return rlist;
 	}
 
@@ -219,7 +214,6 @@ public class ResourceDAO implements ResourceDAOInt {
 			dto.setResourceCapacity(rs.getInt("resource_capacity"));
 			return dto;
 		});
-		System.out.println(rlist);
 		return rlist;
 	}
 
@@ -246,7 +240,6 @@ public class ResourceDAO implements ResourceDAOInt {
 	public void addRes(Resource res) {
 
 		String sql1 = "select brn_id from branches where brn_clg_id = ? and brn_name = ?";
-		System.out.println(res.getBranch() + "  |||||| " + res.getClg_id());
 		int brn_id = jdbcTemplate.queryForObject(sql1, new Object[] { res.getClg_id(), res.getBranch() },
 				Integer.class);
 		String sql = "insert into RESOURCES(resource_id,clg_id,resource_capacity,status,brn_id) values(?,?,?,?,?)";

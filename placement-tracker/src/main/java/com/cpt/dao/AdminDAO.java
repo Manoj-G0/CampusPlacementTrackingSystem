@@ -62,7 +62,6 @@ public class AdminDAO implements AdminDAOInt {
 
 	@Override
 	public void save(Student student) {
-		System.out.println(student);
 		String sql = "INSERT INTO students (roll_no, full_name, branch_id, college_id, gender, status, cgpa, backlogs, college_email) "
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 		jdbcTemplate.update(sql, student.getRollNo(), student.getFullName(), student.getBranchId(), student.getClgId(),

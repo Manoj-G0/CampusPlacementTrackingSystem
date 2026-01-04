@@ -44,7 +44,6 @@ public class UserDAO implements UserDAOInt {
 	@Override
 	public String getRole(String userId, String passwd) {
 		String sql = "select usr_role from users where usr_id = ? and usr_password = ?";
-		System.out.println(userId + " " + passwd);
 		try {
 			String role = jdbcTemplate.queryForObject(sql, new Object[] { userId, passwd }, String.class);
 			return role;

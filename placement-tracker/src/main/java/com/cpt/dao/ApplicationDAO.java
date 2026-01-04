@@ -38,7 +38,6 @@ public class ApplicationDAO implements ApplicationDAOInt {
 
 	@Override
 	public long countByPldId(Integer pldId) {
-		System.out.println(pldId);
 		String sql = "SELECT COUNT(*) FROM applications WHERE app_pld_id = ?";
 		return jdbcTemplate.queryForObject(sql, new Object[] { pldId }, Long.class);
 	}

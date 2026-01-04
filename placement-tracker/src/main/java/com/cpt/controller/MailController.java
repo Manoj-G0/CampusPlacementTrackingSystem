@@ -124,11 +124,9 @@ public class MailController {
 
 			String htmlContent = emailTemplate.getStudentDriveTemplate(content);
 			String[] recipients = to.split(",");
-			System.out.println(to.split(","));
 			boolean allSuccess = true;
 			for (String recipient : recipients) {
 				recipient = recipient.trim();
-				System.out.println(recipient);
 				if (!recipient.isEmpty()) {
 					boolean success = emailService.sendEmail(from, recipient, subject, htmlContent, content);
 					if (!success) {

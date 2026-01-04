@@ -233,7 +233,6 @@ public class StudentController {
 	// To get the upcoming drives
 	@GetMapping("/upcomingdrives")
 	public String showUpcomingDrives(HttpSession session, Model model) {
-		System.out.println(session.getAttribute("userId"));
 		String sessionCheck = validateSession(session);
 		if (sessionCheck != null) {
 			return sessionCheck;
@@ -284,7 +283,6 @@ public class StudentController {
 	@PostMapping("/addresume")
 	public String addResume(@RequestParam("resume") MultipartFile resumeFile, HttpSession session, Model model)
 			throws IOException {
-		System.out.println(session.getAttribute("userId"));
 		String sessionCheck = validateSession(session);
 		if (sessionCheck != null) {
 			return sessionCheck;
@@ -321,7 +319,6 @@ public class StudentController {
 	public void viewResume(@PathVariable("userId") String userId, HttpServletResponse response, Model model)
 			throws IOException {
 		Resume resume = studentService.getResumesByUserId(userId);
-		System.out.println(resume);
 		if (resume != null && resume.getResumeData() != null) {
 			String filename = resume.getResFileName();
 			byte[] fileData = resume.getResumeData();
@@ -356,11 +353,8 @@ public class StudentController {
 	@GetMapping("/applicationForm")
 	public String getApplicationForm(HttpSession session, Model m) {
 		String usr = (String) session.getAttribute("userId");
-		System.out.println(usr);
 		m.addAttribute("resume", studentService.getResumesByUserId((String) session.getAttribute("userId")));
-		System.out.println(m.getAttribute("resume"));
 		m.addAttribute("student", studentService.getStudentById(usr));
-		System.out.println(m.getAttribute("student"));
 		return "applicationform";
 	}
 
@@ -399,7 +393,6 @@ public class StudentController {
 		if (sessionCheck != null) {
 			return sessionCheck;
 		}
-		System.out.println(cmpId + " " + pldId + " " + usrId);
 		try {
 			if (studentService.resumeExists(usrId)) {
 				studentService.submitApplication(usrId, pldId, cmpId);

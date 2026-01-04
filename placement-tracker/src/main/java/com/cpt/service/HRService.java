@@ -300,7 +300,6 @@ public class HRService {
 
 		List<Student> students = getAllStudentsDetails();
 		List<Student> filteredStudents;
-		System.out.println(cgpa + " " + backlogs + " " + gender + " " + brn_id + " " + pld_id);
 		filteredStudents = students.stream().filter(student -> student.getCgpa() >= cgpa
 				&& student.getBranchId() == brn_id && student.getBacklogs() <= backlogs).collect(Collectors.toList());
 

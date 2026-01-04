@@ -26,7 +26,6 @@ public class DriveDao implements DriveDAOInt {
 
 		// Using JdbcTemplate to execute the query and map the results
 		List<Drive> dlist = jdbcTemplate.query(query, new Object[] { firstDateOfCurrentMonth }, new DriveRowMapper());
-		System.out.println(dlist);
 		return dlist;
 	}
 

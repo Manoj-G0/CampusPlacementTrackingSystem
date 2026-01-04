@@ -42,7 +42,6 @@ public class RoleBasedAccessFilter implements Filter {
 			httpResponse.sendRedirect(contextPath + "/login");
 			return;
 		}
-		System.out.println(role + "ssdkjfl");
 
 		// Role-based access logic
 		if (role.equals("STUD") && path.startsWith("/student/")) {
@@ -50,7 +49,6 @@ public class RoleBasedAccessFilter implements Filter {
 		} else if (role.equals("ADMN") && path.startsWith("/admin/")) {
 			chain.doFilter(request, response);
 		} else if (role.equals("HR") && path.startsWith("/hr/")) {
-			System.out.println("hagasdasdgasjk");
 			chain.doFilter(request, response);
 		} else {
 			httpResponse.sendRedirect(contextPath + "/login");

@@ -73,7 +73,6 @@ public class UserController {
 		}
 		session.setAttribute("userId", usr);
 		session.setAttribute("role", role);
-		System.out.println(usr + "---" + passwd + "---" + role);
 		m.addAttribute("userId", usr);
 		if (role.equals("STUD")) {
 			if (passwd.equals("student@123")) {

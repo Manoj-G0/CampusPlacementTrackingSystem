@@ -138,7 +138,6 @@ public class AdminController {
 	@GetMapping("/edit-placement-drives/{pldId}")
 	public String editPlacementDrives(@PathVariable("pldId") int pldId, Model model) {
 		model.addAttribute("placementDrive", adminService.getPlacementById(pldId));
-		System.out.println(adminService.getPlacementById(pldId).getPldRole());
 		model.addAttribute("colleges", adminService.getAllColleges());
 		model.addAttribute("companies", adminService.getAllCompanies());
 		return "editPlacementDrives";
@@ -366,7 +365,6 @@ public class AdminController {
 	public ResponseEntity<byte[]> getPhaseWiseReport(@RequestParam("pld_id") int pld_id,
 			@RequestParam("phase_id") int phase_id, @RequestParam("phase_sequence") int phase_sequence)
 			throws Exception {
-		System.out.println(phase_sequence);
 		return adminService.getPhaseWiseReport(pld_id, phase_id, phase_sequence);
 	}
 
@@ -431,7 +429,6 @@ public class AdminController {
 	public String companyDetails(Model model) {
 
 		List<String> companies = adminService.getCompanies();// companyDAO
-		System.out.println("###" + " " + companies.get(0));
 		model.addAttribute("companies", companies);
 		return "TemplateDownload";
 	}
@@ -473,7 +470,6 @@ public class AdminController {
 	@ResponseBody
 	public List<List<String>> uploadFile(@RequestParam("file") MultipartFile file, HttpSession session, Model model) {
 
-		System.out.println("uploading data into file");
 		studentList = adminService.studentsList(file, hmap.size());// ScreeningService
 
 		session.setAttribute("upload", d + 1);
@@ -490,7 +486,6 @@ public class AdminController {
 	public List<List<String>> evaluateStudents(@RequestParam("phase") String phase, HttpSession session) {
 		selectedphase = phase;
 		shortlistedStudents = adminService.evaluateStudents(phase, hmap, session);
-		System.out.println(shortlistedStudents);
 		return shortlistedStudents; // Return JSON list directly
 	}
 
@@ -505,12 +500,10 @@ public class AdminController {
 
 	@PostMapping("/send")
 	public String sendShortlisted(Model model, HttpSession session, RedirectAttributes redirectAttributes) {
-		System.out.println("Hello" + selectedphase + " phase");
 		model.addAttribute("sentStudents", shortlistedStudents);
 		model.addAttribute("screeningRounds", scores);
 
 		List<Integer> scoresList = (List<Integer>) session.getAttribute("scoresList");
-		System.out.println("scores " + scoresList);
 		adminService.getPhaseScores(selectedphase, scores, shortlistedStudents, scoresList, selectedCompanyId);
 
 		redirectAttributes.addFlashAttribute("successMessage", "Sent successfully!");
@@ -553,7 +546,6 @@ public class AdminController {
 	@GetMapping("/addstudents")
 	public String showStudentManagement(Model model) {
 		model.addAttribute("students", new ArrayList<Student>());
-		System.out.println(messageDTO.getStudentFail());
 		model.addAttribute("messageDTO", messageDTO);
 		return "student_management";
 	}
@@ -604,7 +596,6 @@ public class AdminController {
 	@PostMapping("/saveStudents")
 	@ResponseBody
 	public ResponseEntity<Map<String, String>> saveStudents(@RequestBody List<Student> students) {
-		System.out.println(students);
 		if (students == null || students.isEmpty()) {
 			Map<String, String> response = new HashMap<>();
 			response.put("status", "error");
@@ -636,7 +627,6 @@ public class AdminController {
 			@RequestParam("email") String email, Model model) {
 		try {
 			Admin admin = new Admin(adminId, adminName, designation, email, collegeId);
-			System.out.println(adminId + " " + adminName + " " + designation + " " + collegeId);
 			adminService.addAdmin(admin);
 			model.addAttribute("message", "Admin added successfully");
 		} catch (Exception e) {

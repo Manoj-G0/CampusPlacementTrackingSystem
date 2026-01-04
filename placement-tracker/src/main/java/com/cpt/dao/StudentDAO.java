@@ -416,7 +416,6 @@ public class StudentDAO implements StudentDAOInt {
 	// }
 	@Override
 	public Profile getProfile(String usrId) {
-		System.out.println(usrId);
 		String sql = "SELECT pr.prf_contact, clg.clg_name, pr.prf_image, st.github_url, st.skills, st.full_name, st.gender, st.cgpa, st.backlogs, st.college_email, st.roll_no, brn.brn_name  FROM profiles pr join students st on st.roll_no = pr.prf_usr_id join branches brn on brn.brn_id = st.branch_id join colleges clg on st.college_id = clg.clg_id WHERE pr.prf_usr_id = ?";
 		return jdbcTemplate.queryForObject(sql, profileMapper, new Object[] { usrId });
 	}
@@ -446,7 +445,7 @@ public class StudentDAO implements StudentDAOInt {
 		return jdbcTemplate.queryForObject(sql, Long.class);
 	}
 
-	private final RowMapper<AttendedDrive> attendedDriveMapper = new RowMapper<>() {
+	private final RowMapper<AttendedDrive> attendedDriveMapper = new RowMapper<AttendedDrive>() {
 		@Override
 		public AttendedDrive mapRow(ResultSet rs, int rowNum) throws SQLException {
 			// This RowMapper is used to process individual rows, but we'll handle grouping
@@ -518,7 +517,7 @@ public class StudentDAO implements StudentDAOInt {
 
 	}
 
-	private final RowMapper<DriveInfo> driveInfoMapper = new RowMapper<>() {
+	private final RowMapper<DriveInfo> driveInfoMapper = new RowMapper<DriveInfo>() {
 		@Override
 		public DriveInfo mapRow(ResultSet rs, int rowNum) throws SQLException {
 			DriveInfo drive = new DriveInfo();

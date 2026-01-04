@@ -23,7 +23,7 @@ public class RoundWiseShortlistedDAO implements RoundWiseShortlistedDAOInt {
 		jdbcTemplate = new JdbcTemplate(dataSource);
 	}
 
-	private final RowMapper<RoundWiseShortlisted> rowMapper = new RowMapper<>() {
+	private final RowMapper<RoundWiseShortlisted> rowMapper = new RowMapper<RoundWiseShortlisted>() {
 		@Override
 		public RoundWiseShortlisted mapRow(ResultSet rs, int rowNum) throws SQLException {
 			RoundWiseShortlisted list = new RoundWiseShortlisted();
@@ -39,7 +39,6 @@ public class RoundWiseShortlistedDAO implements RoundWiseShortlistedDAOInt {
 
 	@Override
 	public void saveList(int phase_id, int pldId, String stdId, int score, String pname, int selectedCompanyId) {
-		System.out.println(phase_id + " " + pldId + " " + stdId + " " + score + " " + pname + " " + selectedCompanyId);
 		String sql = "INSERT INTO round_wise_shortlisted(phase_id,pld_id,student_id,score) VALUES (?, ?, ?,?)";
 		jdbcTemplate.update(sql, phase_id, pldId, stdId, score);
 

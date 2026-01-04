@@ -19,7 +19,6 @@ public class MailDAO implements MailDAOInt {
 		String sql = "INSERT INTO email_log (sender, recipient, subject, status, sent_at) VALUES (?, ?, ?, ?, ?)";
 		jdbcTemplate.update(sql, emailLog.getSender(), emailLog.getRecipient(), emailLog.getSubject(),
 				emailLog.getStatus(), emailLog.getSentAt());
-		System.out.println("insert");
 	}
 
 	@Override

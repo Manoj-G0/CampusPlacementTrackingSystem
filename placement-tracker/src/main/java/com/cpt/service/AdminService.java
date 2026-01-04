@@ -530,7 +530,6 @@ public class AdminService {
 
 				List<String> row = Arrays.asList(data);
 				studentList.add(row);
-				System.out.println(Arrays.asList(data));
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

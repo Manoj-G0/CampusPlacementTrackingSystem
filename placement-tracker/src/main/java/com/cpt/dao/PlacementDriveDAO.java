@@ -209,10 +209,8 @@ public class PlacementDriveDAO implements PlacementDriveDAOInt {
 	public List<Map<String, Object>> getAttendedDrives(String usrId) {
 		String sql = "SELECT pd.pld_id, pd.pld_name " + "FROM placement_drives pd "
 				+ "JOIN attended_drives ad ON pd.pld_id = ad.pld_id " + "WHERE ad.usr_id = ?";
-		System.out.println("DAO: Executing getAttendedDrives for usr_id: " + usrId);
 		try {
 			List<Map<String, Object>> drives = jdbcTemplate.queryForList(sql, usrId);
-			System.out.println("DAO: Attended drives fetched: " + drives);
 			return drives;
 		} catch (Exception e) {
 			System.err.println("DAO: Error fetching attended drives: " + e.getMessage());
@@ -225,10 +223,8 @@ public class PlacementDriveDAO implements PlacementDriveDAOInt {
 		String sql = "SELECT hp.hph_name, hp.hph_sequence, rws.score " + "FROM round_wise_shortlisted rws "
 				+ "JOIN hiring_phases hp ON rws.phase_id = hp.hph_id AND rws.pld_id = hp.hph_pld_id "
 				+ "WHERE rws.student_id = ? AND rws.pld_id = ? " + "ORDER BY hp.hph_sequence";
-		System.out.println("DAO: Executing getDriveScores for usr_id: " + usrId + ", pld_id: " + pldId);
 		try {
 			List<Map<String, Object>> scores = jdbcTemplate.queryForList(sql, usrId, pldId);
-			System.out.println("DAO: Scores fetched: " + scores);
 			return scores;
 		} catch (Exception e) {
 			System.err.println("DAO: Error fetching drive scores: " + e.getMessage());

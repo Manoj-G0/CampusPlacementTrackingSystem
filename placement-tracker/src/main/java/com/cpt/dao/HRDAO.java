@@ -221,7 +221,7 @@ public class HRDAO implements HRDAOInt {
 		return jdbcTemplate.query(sql, hiringPhaseMapper, pldId);
 	}
 
-	private final RowMapper<HiringPhase> hiringPhaseMapper = new RowMapper<>() {
+	private final RowMapper<HiringPhase> hiringPhaseMapper = new RowMapper<HiringPhase>() {
 		@Override
 		public HiringPhase mapRow(ResultSet rs, int rowNum) throws SQLException {
 			HiringPhase hs = new HiringPhase();
@@ -260,7 +260,7 @@ public class HRDAO implements HRDAOInt {
 		return jdbcTemplate.query(sql, shortlistedMapper, pldId);
 	}
 
-	private final RowMapper<Shortlisted> shortlistedMapper = new RowMapper<>() {
+	private final RowMapper<Shortlisted> shortlistedMapper = new RowMapper<Shortlisted>() {
 		@Override
 		public Shortlisted mapRow(ResultSet rs, int rowNum) throws SQLException {
 			Shortlisted list = new Shortlisted();
@@ -286,7 +286,7 @@ public class HRDAO implements HRDAOInt {
 		return jdbcTemplate.query(sql, rowMapper, pldId, round);
 	}
 
-	private final RowMapper<RoundWiseShortlisted> rowMapper = new RowMapper<>() {
+	private final RowMapper<RoundWiseShortlisted> rowMapper = new RowMapper<RoundWiseShortlisted>() {
 		@Override
 		public RoundWiseShortlisted mapRow(ResultSet rs, int rowNum) throws SQLException {
 			RoundWiseShortlisted list = new RoundWiseShortlisted();

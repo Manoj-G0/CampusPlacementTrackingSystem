@@ -21,7 +21,7 @@ public class HiringPhaseDAO implements HiringPhaseDAOInt {
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
-	private final RowMapper<HiringPhase> rowMapper = new RowMapper<>() {
+	private final RowMapper<HiringPhase> rowMapper = new RowMapper<HiringPhase>() {
 		@Override
 		public HiringPhase mapRow(ResultSet rs, int rowNum) throws SQLException {
 			HiringPhase hs = new HiringPhase();
@@ -63,7 +63,6 @@ public class HiringPhaseDAO implements HiringPhaseDAOInt {
 	public boolean existsByPldId(int pld_id) {
 		String sql = "SELECT COUNT(*) FROM screening_criteria WHERE scr_pld_id =?";
 		Integer count = jdbcTemplate.queryForObject(sql, new Object[] { pld_id }, Integer.class);
-		System.out.println(count);
 		return count != null && count > 0; // Return true if the count is greater than 0, meaning pld_id exists
 	}
 
@@ -122,8 +121,6 @@ public class HiringPhaseDAO implements HiringPhaseDAOInt {
 	@Override
 	public void updateThresholdByPhaseId(int hphid, double newThreshold) {
 		String sql = "UPDATE hiring_phases SET threshold_score = ? WHERE hph_id = ?";
-
-		System.out.println("entered update");
 
 		jdbcTemplate.update(sql, newThreshold, hphid);
 	}

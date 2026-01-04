@@ -176,8 +176,7 @@
                     </div>
                 <% } %>
 
-                <% Student student = (Student)request.getAttribute("student"); 
-                	System.out.println(student);
+                <% Student student = (Student)request.getAttribute("student");
                 %>
                 <% Integer pldId = (Integer)request.getAttribute("pldId"); %>
                 <% Integer cmpId = (Integer)request.getAttribute("cmpId"); %>
