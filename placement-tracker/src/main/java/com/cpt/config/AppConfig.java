@@ -127,8 +127,8 @@ public class AppConfig implements WebMvcConfigurer {
 	}
 
 	@Bean
-	public MultipartConfigElement multipartConfigElement() {
-		return new MultipartConfigElement("/tmp/uploads", 10485760, 10485760, 0);
+	public MultipartConfigElement multipartConfigElement(Environment env) {
+		return new MultipartConfigElement(env.getProperty("spring.servlet.multipart.location"), 10485760, 10485760, 0);
 		// location,maxFilesize,maxRequestsize,fileSizeThreshold
 	}
 }
