@@ -23,17 +23,18 @@ import jakarta.mail.internet.MimeMultipart;
 @Service
 @PropertySource("classpath:db.properties")
 public class MailService {
-	@Value("${USER}")
-	private String fromEmail;
-	@Value("${PASSWORD}")
-	private String password;
+    @Value("${MAIL_USER}")
+    private String fromEmail;
 
-	private final MailDAOInt mailDao;
+    @Value("${MAIL_PASSWORD}")
+    private String password;
 
-	public MailService(MailDAOInt mailDao) {
-		this.mailDao = mailDao;
-		mailDao.initTable();
-	}
+    private final MailDAOInt mailDao;
+
+    public MailService(MailDAOInt mailDao) {
+        this.mailDao = mailDao;
+        mailDao.initTable();
+    }
 
 	// To send the email
 	public boolean sendEmail(String from, String to, String subject, String messageContent,
@@ -57,35 +58,32 @@ public class MailService {
 			}
 		});
 
-		try {
-			MimeMessage message = new MimeMessage(session);
-			message.setFrom(new InternetAddress(from));
-			message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
-			message.setSubject(subject);
+        try {
+            MimeMessage message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(fromEmail));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
+            message.setSubject(subject);
 
-			// Set HTML content with dynamic replacements
-			String finalContent = messageContent;
-			for (String key : content.keySet()) {
-				finalContent = finalContent.replace("{" + key + "}", content.get(key));
-			}
-			MimeBodyPart mimeBodyPart = new MimeBodyPart();
-			mimeBodyPart.setContent(finalContent, "text/html");
+            String finalContent = messageContent;
+            for (String key : content.keySet()) {
+                finalContent = finalContent.replace("{" + key + "}", content.get(key));
+            }
+            MimeBodyPart mimeBodyPart = new MimeBodyPart();
+            mimeBodyPart.setContent(finalContent, "text/html");
 
-			MimeMultipart multipart = new MimeMultipart();
-			multipart.addBodyPart(mimeBodyPart);
+            MimeMultipart multipart = new MimeMultipart();
+            multipart.addBodyPart(mimeBodyPart);
 
-			message.setContent(multipart);
+            message.setContent(multipart);
 
-			Transport.send(message);
-			emailLog.setStatus("SUCCESS");
-			// LOGGER.info("Email sent successfully to " + to);
-		} catch (MessagingException e) {
-			emailLog.setStatus("FAILED");
-			// LOGGER.severe("Failed to send email to " + to + ": " + e.getMessage());
-			mailDao.saveEmailLog(emailLog);
-			return false;
-		}
-		mailDao.saveEmailLog(emailLog);
-		return true;
-	}
+            Transport.send(message);
+            emailLog.setStatus("SUCCESS");
+        } catch (MessagingException e) {
+            emailLog.setStatus("FAILED");
+            mailDao.saveEmailLog(emailLog);
+            return false;
+        }
+        mailDao.saveEmailLog(emailLog);
+        return true;
+    }
 }

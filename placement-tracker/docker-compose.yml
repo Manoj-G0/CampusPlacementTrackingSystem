@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: placement-tracker-db
+    restart: always
+    environment:
+      POSTGRES_DB: placementdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: placement-tracker-app
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/placementdb
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      STUDENT_PASSWORD: student@123
+      ADMIN_PASSWORD: admin@123
+      HR_PASSWORD: hr@123
+      MAIL_USER: manojkumar.m62665@gmail.com
+      MAIL_PASSWORD: Manoj@123
+
+volumes:
+  pgdata:

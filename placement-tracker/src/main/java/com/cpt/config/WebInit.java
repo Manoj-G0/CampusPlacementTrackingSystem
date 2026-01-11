@@ -14,23 +14,33 @@ import jakarta.servlet.ServletRegistration;
 
 public class WebInit implements WebApplicationInitializer {
 
+	private static final int MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10 MB
+
 	@Override
 	public void onStartup(ServletContext servletContext) throws ServletException {
-		// Create the Spring application context
-		AnnotationConfigWebApplicationContext context = new AnnotationConfigWebApplicationContext();
-		context.setConfigLocation("com"); // Java config package
 
-		// Register the DispatcherServlet
+		// 1️⃣ Create Spring context
+		AnnotationConfigWebApplicationContext context = new AnnotationConfigWebApplicationContext();
+
+		// ✅ Correct way: scan base package
+		context.setServletContext(servletContext);   // ✅ IMPORTANT
+        context.scan("com.cpt");
+        context.register(AppConfig.class);
+
+		// 2️⃣ Register DispatcherServlet
 		ServletRegistration.Dynamic dispatcher = servletContext.addServlet("dispatcher",
 				new DispatcherServlet(context));
+
 		dispatcher.setLoadOnStartup(1);
 		dispatcher.addMapping("/");
-		dispatcher.setMultipartConfig(new MultipartConfigElement("C:/temp/uploads", 10485760, 10485760, 0));
 
-		FilterRegistration.Dynamic filterRegistration = servletContext.addFilter("roleBasedAccessFilter",
+		// ✅ Linux / Docker safe upload directory
+		dispatcher.setMultipartConfig(new MultipartConfigElement("/tmp/uploads", MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE, 0));
+
+		// 3️⃣ Register Role-based filter (secured paths only)
+		FilterRegistration.Dynamic roleFilter = servletContext.addFilter("roleBasedAccessFilter",
 				new RoleBasedAccessFilter());
-		filterRegistration.addMappingForUrlPatterns(null, false, "/student/*", "/admin/*", "/hr/*", "/login",
-				"/changepassword");
 
+		roleFilter.addMappingForUrlPatterns(null, false, "/student/*", "/admin/*", "/hr/*");
 	}
 }
