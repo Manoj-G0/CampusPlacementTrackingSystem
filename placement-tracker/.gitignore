@@ -1,1 +1,14 @@
+# Maven
 /target/
+
+# Environment files
+.env
+.env.*
+
+# Docker local-only
+docker-compose.yml
+
+# OS / IDE
+.idea/
+.vscode/
+*.log
